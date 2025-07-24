@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: b384873ebe6188047bc3aba496c03839
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - defaultMat: {fileID: 2100000, guid: bae3f2a6d75fde14299a81de61f0f3a6, type: 2}
+  - comparingMat: {fileID: 2100000, guid: 7c6cde909f6631840952e83bf355b9a5, type: 2}
+  - swappingMat: {fileID: 2100000, guid: 040f857f6b7be7b4d84a1b019e3e4f6a, type: 2}
+  - sortedMat: {fileID: 2100000, guid: c13ce782d8d3a034a9947a27f4f23a6e, type: 2}
+  - startButton: {instanceID: 0}
+  - resetButton: {instanceID: 0}
+  - algorithmDropdown: {instanceID: 0}
+  - speedSlider: {instanceID: 0}
+  - statusText: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

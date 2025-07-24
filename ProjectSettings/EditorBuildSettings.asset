@@ -4,5 +4,14 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/MainMenuScene.unity
+    guid: fbc15955614c29942878e5416538acda
+  - enabled: 1
+    path: Assets/Scenes/NeuralNetworkScene.unity
+    guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
+    path: Assets/Scenes/SortingAlgorithmScene.unity
+    guid: 522b99d2d7ec4634cb1df9608ba5cabb
   m_configObjects: {}

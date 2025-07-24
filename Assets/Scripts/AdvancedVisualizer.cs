@@ -6,6 +6,7 @@ using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using System.Threading.Tasks; 
 
 public class AdvancedVisualizer : MonoBehaviour
 {
@@ -105,40 +106,131 @@ public class AdvancedVisualizer : MonoBehaviour
     }
     #endregion
 
-    #region Network Handling
+#region Network Handling
+    // [修改] 将原有的ConnectToServer逻辑改为由StartConnecting启动的协程
     public void StartConnecting()
     {
-        if (clientReceiveThread != null && clientReceiveThread.IsAlive)
+        // 检查是否已经有一个活动的连接线程或客户端已连接，防止重复启动
+        if ((clientReceiveThread != null && clientReceiveThread.IsAlive) || (client != null && client.Connected))
         {
             Debug.LogWarning("连接已在进行中或已建立，请勿重复调用。");
             return;
         }
+        
+        // 启动一个新的协程来处理连接和重试的逻辑
+        StartCoroutine(ConnectWithRetries());
+    }
 
-        clientReceiveThread = new Thread(() =>
+    /// <summary>
+    /// 尝试连接服务器，并在失败时进行重试。
+    /// </summary>
+    /// <param name="maxRetries">最大重试次数</param>
+    /// <param name="retryDelay">每次重试前的等待时间（秒）</param>
+    private IEnumerator ConnectWithRetries(int maxRetries = 5, float retryDelay = 1.0f)
+    {
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            try
-            {
-                client = new TcpClient(serverHost, serverPort);
-                stream = client.GetStream();
-                Debug.Log("Successfully connected to Python director!");
-                byte[] lengthBytes = new byte[4];
-                while (isRunning)
+            Debug.Log($"正在尝试连接服务器... (第 {attempt}/{maxRetries} 次)");
+            
+            // [核心修改] 使用一个Task变量来启动后台连接，但不await它
+            bool connectionSuccess = false;
+            Exception connectionException = null;
+            Task connectionTask = Task.Run(() => {
+                try
                 {
-                    int bytesRead = stream.Read(lengthBytes, 0, 4);
-                    if (bytesRead < 4) continue;
-                    Array.Reverse(lengthBytes);
-                    int messageLength = BitConverter.ToInt32(lengthBytes, 0);
-                    byte[] messageBytes = new byte[messageLength];
-                    int totalBytesRead = 0;
-                    while (totalBytesRead < messageLength) totalBytesRead += stream.Read(messageBytes, totalBytesRead, messageLength - totalBytesRead);
-                    string serverMessage = Encoding.UTF8.GetString(messageBytes);
-                    lock (messageQueue) { messageQueue.Enqueue(serverMessage); }
+                    client = new TcpClient();
+                    client.Connect(serverHost, serverPort);
+                    connectionSuccess = true;
                 }
+                catch (Exception e)
+                {
+                    connectionException = e; // 在后台线程中捕获异常
+                }
+            });
+
+            // [核心修改] 使用 yield return new WaitUntil(...) 来等待Task完成
+            // 这可以让协程在这里暂停，直到后台任务结束，同时不会冻结Unity主线程
+            yield return new WaitUntil(() => connectionTask.IsCompleted);
+
+            // Task完成后，检查结果
+            if (connectionSuccess)
+            {
+                Debug.Log("服务器连接成功！");
+                stream = client.GetStream();
+                isRunning = true;
+                clientReceiveThread = new Thread(ReceiveDataLoop) { IsBackground = true };
+                clientReceiveThread.Start();
+                yield break; 
             }
-            catch (Exception e) { Debug.LogError("Socket exception: " + e); }
-        })
-        { IsBackground = true };
-        clientReceiveThread.Start();
+            
+            // 如果有异常，就在主线程中打印出来
+            if (connectionException != null)
+            {
+                Debug.LogWarning($"第 {attempt} 次连接失败: {connectionException.Message}");
+            }
+
+            if (attempt == maxRetries)
+            {
+                Debug.LogError("已达到最大重试次数，连接失败。");
+                yield break;
+            }
+            
+            Debug.Log($"将在 {retryDelay} 秒后重试...");
+            yield return new WaitForSeconds(retryDelay);
+        }
+    }
+
+    /// <summary>
+    /// 一个专门用于在后台线程中循环接收数据的函数。
+    /// </summary>
+    private void ReceiveDataLoop()
+    {
+        try
+        {
+            byte[] lengthBytes = new byte[4];
+            while (isRunning && client != null && client.Connected)
+            {
+                // Read() 是一个阻塞操作，会在此等待直到有数据可读
+                int bytesRead = stream.Read(lengthBytes, 0, 4);
+                
+                // 如果Read返回0或更少，通常表示连接已从另一端关闭
+                if (bytesRead <= 0)
+                {
+                    if (isRunning) Debug.LogWarning("连接已由服务器端关闭。");
+                    break; 
+                }
+
+                Array.Reverse(lengthBytes);
+                int messageLength = BitConverter.ToInt32(lengthBytes, 0);
+                byte[] messageBytes = new byte[messageLength];
+                int totalBytesRead = 0;
+                while (totalBytesRead < messageLength)
+                {
+                    totalBytesRead += stream.Read(messageBytes, totalBytesRead, messageLength - totalBytesRead);
+                }
+                
+                string serverMessage = Encoding.UTF8.GetString(messageBytes);
+                
+                // 使用主线程调度器将消息安全地放入队列
+                UnityMainThreadDispatcher.Instance().Enqueue(() => {
+                    lock (messageQueue) { messageQueue.Enqueue(serverMessage); }
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            // 如果isRunning为true，说明这不是我们主动关闭的，而是意外错误
+            if (isRunning)
+            {
+                 UnityMainThreadDispatcher.Instance().Enqueue(() => 
+                    Debug.LogError("网络接收线程异常: " + e)
+                );
+            }
+        }
+        finally
+        {
+            Debug.Log("网络接收线程已退出。");
+        }
     }
     #endregion
 
