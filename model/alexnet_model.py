@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class AlexNet(nn.Module): # 我们保持类名不变，以便无缝替换
+class AlexNet(nn.Module):
     def __init__(self, num_classes=10):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
@@ -26,7 +26,6 @@ class AlexNet(nn.Module): # 我们保持类名不变，以便无缝替换
 
     def forward(self, x):
         x = self.features(x)
-        # 为了可视化，我们暂时不执行分类器部分
         x = x.view(-1, 16 * 8 * 8) # 展平操作
         x = self.classifier(x)
         return x

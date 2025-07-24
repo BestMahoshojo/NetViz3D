@@ -1,5 +1,3 @@
-# 文件名: visualizer_director.py
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,7 +9,6 @@ from alexnet_model import AlexNet
 from PIL import Image
 import random
 
-# --- 通信设置 ---
 HOST = '127.0.0.1'
 PORT = 65432
 
@@ -26,7 +23,6 @@ def send_data(connection, data):
         print(f"连接中断: {e}")
         return False
 
-# --- 主可视化函数 ---
 def run_visualization():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
@@ -100,7 +96,6 @@ def run_visualization():
             print("\n所有层可视化完毕!")
             send_data(conn, {"type": "visualization_complete"})
 
-# [新增/恢复并升级]
 def visualize_convolution(conn, layer, input_map, input_name, output_name):
     print("  预计算整层输出...")
     output_map = F.conv2d(input_map, layer.weight, layer.bias)
@@ -134,7 +129,6 @@ def visualize_convolution(conn, layer, input_map, input_name, output_name):
         print(f"    通道 {c_out+1}/{C_out} 完成")
     return True
 
-# [新增/恢复并升级]
 def visualize_maxpool(conn, layer, input_map, input_name, output_name):
     print("  预计算整层输出...")
     output_map = F.max_pool2d(input_map, layer.kernel_size, layer.stride)
@@ -167,7 +161,6 @@ def visualize_maxpool(conn, layer, input_map, input_name, output_name):
                 time.sleep(0.005)
     return True
 
-# [修改] ReLU的可视化逻辑，使其适应分步流程
 def visualize_activation_as_grayscale_update(conn, input_map, input_layer_name_to_update):
     print("  计算ReLU激活...")
     output_map = F.relu(input_map)
