@@ -70,3 +70,5 @@ model/data/*.tar.gz
 model/data/*.zip
 model/weights/*.pth
 model/data/cifar-10-batches-py/
+
+build/

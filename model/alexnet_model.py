@@ -26,6 +26,6 @@ class AlexNet(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(-1, 16 * 8 * 8) # 展平操作
+        x = x.view(-1, 16 * 8 * 8)
         x = self.classifier(x)
         return x

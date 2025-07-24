@@ -1,5 +1,3 @@
-// 文件名: AdvancedVisualizer.cs
-
 using UnityEngine;
 using System;
 using System.Net.Sockets;
@@ -12,7 +10,6 @@ using Newtonsoft.Json;
 public class AdvancedVisualizer : MonoBehaviour
 {
     #region Inspector Fields
-    // 这部分保持不变
     [Header("Network Connection")]
     public string serverHost = "127.0.0.1";
     public int serverPort = 65432;
@@ -46,13 +43,11 @@ public class AdvancedVisualizer : MonoBehaviour
     #endregion
 
     #region Public State
-    // 这部分保持不变
     [HideInInspector]
     public bool isPaused = false;
     #endregion
 
     #region Private Fields
-    // 这部分保持不变
     private TcpClient client;
     private NetworkStream stream;
     private Thread clientReceiveThread;
@@ -74,7 +69,6 @@ public class AdvancedVisualizer : MonoBehaviour
     #region Unity Lifecycle Methods
     void Start()
     {
-        // [修改] 确认 ConnectToServer() 的调用已被注释或删除
         // ConnectToServer(); 
         
         lastNeuronSpacing = neuronSpacing;
@@ -112,7 +106,6 @@ public class AdvancedVisualizer : MonoBehaviour
     #endregion
 
     #region Network Handling
-    // [核心修改] 将 private void ConnectToServer() 修改为 public void StartConnecting()
     public void StartConnecting()
     {
         if (clientReceiveThread != null && clientReceiveThread.IsAlive)
@@ -150,7 +143,6 @@ public class AdvancedVisualizer : MonoBehaviour
     #endregion
 
     #region Message Processing
-    // 这部分保持不变
     private void ProcessMessage(string message)
     {
         var json = JsonConvert.DeserializeObject<Dictionary<string, object>>(message);
@@ -196,17 +188,23 @@ public class AdvancedVisualizer : MonoBehaviour
                 var poolData = JsonConvert.DeserializeObject<PoolStepData>(data);
                 StartCoroutine(AnimatePoolStep(poolData));
                 break;
+            case "explanation_update":
+                if (uiManager != null)
+                {
+                    var explanationData = JsonConvert.DeserializeObject<ExplanationData>(data);
+                    uiManager.UpdateExplanationPanel(explanationData.title, explanationData.text);
+                }
+                break;
         }
     }
     #endregion
 
     #region Coroutine Animations
-    // 这部分保持不变
     private IEnumerator CreateDetailedArchitecture(List<DetailedLayerInfo> topology)
     {
         Debug.Log("Creating detailed architecture...");
         orderedLayerNames.Clear();
-        // [注意] Python脚本现在不发送input层了，所以我们在这里手动创建
+        // Python脚本现在不发送input层，这里手动创建
         var inputLayerInfo = new DetailedLayerInfo { name = "input", type = "Input", output_shape = new List<int> { 1, 3, 32, 32 }, details = "32x32 RGB Image" };
         List<DetailedLayerInfo> fullTopology = new List<DetailedLayerInfo>(topology);
         fullTopology.Insert(0, inputLayerInfo);
@@ -249,7 +247,6 @@ public class AdvancedVisualizer : MonoBehaviour
         Debug.Log("Architecture creation complete.");
     }
     
-    // ... 后续所有协程和辅助函数都保持不变 ...
     private IEnumerator AnimateInputLayer(InputImageData data)
     {
         Debug.Log("Mapping input image to the input layer...");

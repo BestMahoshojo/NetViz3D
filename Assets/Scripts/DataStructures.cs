@@ -52,3 +52,10 @@ public class PoolStepData
     public float min_val;
     public float val_range;
 }
+
+[System.Serializable]
+public class ExplanationData
+{
+    public string title;
+    public string text;
+}

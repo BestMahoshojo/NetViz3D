@@ -14,7 +14,7 @@ public class PythonLauncher : MonoBehaviour
     [Tooltip("您的Python项目文件夹的绝对路径。\n例如: C:/Users/YourUser/my_project/model")]
     public string pythonScriptsPath;
 
-    [Header("System References")] // [新增]
+    [Header("System References")]
     [Tooltip("拖拽场景中挂载了AdvancedVisualizer脚本的对象到这里")]
     public AdvancedVisualizer visualizer; 
 
@@ -55,7 +55,7 @@ public class PythonLauncher : MonoBehaviour
             RunPythonScript(visualizerScriptName, false);
         });
 
-        // [核心修改] 在启动Python脚本后，稍等片刻，然后命令Visualizer开始连接
+        // 在启动Python脚本后，稍等片刻，然后命令Visualizer开始连接
         // 等待1秒，给Python服务器足够的时间来启动和监听端口
         await Task.Delay(1000); 
         
@@ -72,7 +72,7 @@ public class PythonLauncher : MonoBehaviour
 
     private void RunPythonScript(string scriptName, bool waitForExit)
     {
-        // 检查路径是否为空，给出更明确的错误提示
+        // 检查路径是否为空
         if (string.IsNullOrEmpty(pythonExecutablePath) || string.IsNullOrEmpty(pythonScriptsPath))
         {
             UnityEngine.Debug.LogError("Python可执行文件路径或脚本路径未在Inspector中设置！");
@@ -83,7 +83,7 @@ public class PythonLauncher : MonoBehaviour
         {
             FileName = pythonExecutablePath,
             Arguments = Path.Combine(pythonScriptsPath, scriptName),
-            WorkingDirectory = pythonScriptsPath, // 设置工作目录非常重要！
+            WorkingDirectory = pythonScriptsPath, 
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

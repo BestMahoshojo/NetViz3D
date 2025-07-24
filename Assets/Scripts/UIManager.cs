@@ -19,9 +19,9 @@ public class UIManager : MonoBehaviour
     public TMP_Text layerSpacingValueText;
 
     [Header("Camera UI")]
-    public Slider cameraSpeedSlider; 
+    public Slider cameraSpeedSlider;
     public Slider lookSensitivitySlider;
-    public TMP_Text cameraSpeedValueText; 
+    public TMP_Text cameraSpeedValueText;
     public TMP_Text lookSensitivityValueText;
 
     [Header("Layer Info Panel UI")]
@@ -34,6 +34,9 @@ public class UIManager : MonoBehaviour
     public Button exitButton;
     private TMP_Text pauseButtonText;
 
+    [Header("Explanation Panel UI")]
+    public TMP_Text explanationTitleText;
+    public TMP_Text explanationContentText;
     void Start()
     {
         if (visualizer != null)
@@ -53,7 +56,7 @@ public class UIManager : MonoBehaviour
         layerSpacingSlider.onValueChanged.AddListener(OnLayerSpacingChanged);
         cameraSpeedSlider.onValueChanged.AddListener(OnCameraSpeedChanged);
         lookSensitivitySlider.onValueChanged.AddListener(OnLookSensitivityChanged);
-        
+
         if (startButton != null) startButton.onClick.AddListener(OnStartButtonPressed);
         if (pauseButton != null)
         {
@@ -91,17 +94,17 @@ public class UIManager : MonoBehaviour
 
         // 在编辑器模式下，Application.Quit()有时不会立即触发OnApplicationQuit。
         // 手动调用清理函数可以确保Python进程被关闭。
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
         if (pythonLauncher != null)
         {
             // 通过反射或设为public来调用KillPythonProcess
-            // 为了简单，我们直接让它调用OnApplicationQuit
+            // 直接让它调用OnApplicationQuit
             pythonLauncher.SendMessage("OnApplicationQuit", SendMessageOptions.DontRequireReceiver);
         }
         UnityEditor.EditorApplication.isPlaying = false;
-        #else
+#else
         Application.Quit();
-        #endif
+#endif
     }
 
     public void OnNeuronSpacingChanged(float value)
@@ -154,7 +157,7 @@ public class UIManager : MonoBehaviour
             CreateLayerInfoItem(layerInfo.name, layerInfo.type, layerInfo.details);
         }
     }
-    
+
     private void CreateLayerInfoItem(string layerName, string layerType, string layerDetails)
     {
         GameObject itemGO = Instantiate(layerInfoItemPrefab, layerInfoContentPanel);
@@ -164,11 +167,24 @@ public class UIManager : MonoBehaviour
         toggle.isOn = true;
         infoText.text = $"<b>[{layerName}] {layerType}</b>\n<size=18><i>  {layerDetails}</i></size>";
 
-        toggle.onValueChanged.AddListener((isOn) => {
+        toggle.onValueChanged.AddListener((isOn) =>
+        {
             if (visualizer != null)
             {
                 visualizer.ToggleLayerVisibility(layerName, isOn);
             }
         });
+    }
+    
+    public void UpdateExplanationPanel(string title, string content)
+    {
+        if (explanationTitleText != null)
+        {
+            explanationTitleText.text = title;
+        }
+        if (explanationContentText != null)
+        {
+            explanationContentText.text = content;
+        }
     }
 }

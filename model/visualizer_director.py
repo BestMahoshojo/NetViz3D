@@ -51,6 +51,21 @@ def run_visualization():
             transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
             input_tensor = transform(img).unsqueeze(0).to(device)
 
+            explanations = {
+                "conv": {
+                    "title": "Convolution Operation",
+                    "text": "The kernel (red box) slides over the input layer. At each step, it performs a dot product to produce a single value in the output feature map. This process detects features like edges and textures."
+                },
+                "relu": {
+                    "title": "ReLU Activation",
+                    "text": "Applying the Rectified Linear Unit function. It's a simple rule: if a value is negative, it becomes zero; otherwise, it stays the same. This introduces non-linearity, allowing the network to learn more complex patterns."
+                },
+                "pool": {
+                    "title": "Max Pooling",
+                    "text": "The pooling window (red box) slides over the input. It takes the maximum value from the area it covers. This reduces the size of the feature map, making the network more efficient and robust to small variations."
+                }
+            }
+
             # 发送包含详细参数的拓扑结构
             print("正在计算并发送详细的模型拓扑...")
             topology = []
@@ -93,6 +108,24 @@ def run_visualization():
                 
                 print(f"\n--- 可视化层 {layer_name}: {layer.__class__.__name__} ---")
 
+                # 根据层类型发送对应的解说词
+                current_explanation = None
+                if isinstance(layer, nn.Conv2d):
+                    current_explanation = explanations["conv"]
+                elif isinstance(layer, nn.ReLU):
+                    current_explanation = explanations["relu"]
+                elif isinstance(layer, nn.MaxPool2d):
+                    current_explanation = explanations["pool"]
+
+                if current_explanation:
+                    explanation_message = {
+                        "type": "explanation_update", # [新增] 新的消息类型
+                        "data": current_explanation
+                    }
+                    if not send_data(conn, explanation_message): return
+                    time.sleep(1) # 等待用户阅读
+
+                # [修改] 调用分步动画函数 (这部分逻辑恢复)
                 if isinstance(layer, nn.Conv2d):
                     if not visualize_convolution(conn, layer, x, prev_layer_name, layer_name): return
                 elif isinstance(layer, nn.ReLU):
