@@ -247,7 +247,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: -0.00027060174}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &266622936
@@ -286,7 +286,7 @@ MonoBehaviour:
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 1
-  m_ChildControlHeight: 0
+  m_ChildControlHeight: 1
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
@@ -476,8 +476,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 333.71, y: 143.17}
-  m_SizeDelta: {x: -667.43, y: -610.6103}
+  m_AnchoredPosition: {x: 289.815, y: 143.17}
+  m_SizeDelta: {x: -579.64, y: -610.6103}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &384332348
 MonoBehaviour:
@@ -1290,7 +1290,7 @@ MonoBehaviour:
   lookSensitivitySlider: {fileID: 1395216524}
   cameraSpeedValueText: {fileID: 0}
   lookSensitivityValueText: {fileID: 0}
-  layerInfoItemPrefab: {fileID: 7331984853781554132, guid: e0e46fa4b9714fa4d87aa33caa439336, type: 3}
+  layerInfoItemPrefab: {fileID: 5241482020480594846, guid: 388b731e288d8a04abb941e2a2e17d1e, type: 3}
   layerInfoContentPanel: {fileID: 266622935}
 --- !u!114 &788610327
 MonoBehaviour:
@@ -1718,8 +1718,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 333.7135, y: 280.6}
-  m_SizeDelta: {x: -667.4271, y: -561.1999}
+  m_AnchoredPosition: {x: 289.82, y: 280.6}
+  m_SizeDelta: {x: -579.63, y: -561.1999}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &897513301
 MonoBehaviour:
@@ -1841,7 +1841,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1066637341}
   m_HandleRect: {fileID: 1066637340}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -3271,8 +3271,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -128.29, y: 224.24}
-  m_SizeDelta: {x: 667.43, y: 274.85}
+  m_AnchoredPosition: {x: -129.1867, y: 225.24}
+  m_SizeDelta: {x: 579.6365, y: 274.85}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1566782574
 MonoBehaviour:

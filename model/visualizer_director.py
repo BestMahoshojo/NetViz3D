@@ -32,7 +32,6 @@ def run_visualization():
         with conn:
             print(f"Unity已连接: {addr}")
 
-            # 1. 加载模型
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             model = AlexNet(num_classes=10).to(device)
             try:
@@ -42,7 +41,6 @@ def run_visualization():
                 return
             model.eval()
 
-            # 2. 从CIFAR-10测试集中随机抽取一张图片
             print("从CIFAR-10测试集中随机抽取图片...")
             test_dataset_pil = datasets.CIFAR10(root='./data', train=False, download=True, transform=None)
             random_index = random.randint(0, len(test_dataset_pil) - 1)
@@ -53,7 +51,7 @@ def run_visualization():
             transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
             input_tensor = transform(img).unsqueeze(0).to(device)
 
-            # 3. [核心修改] 发送包含详细参数的拓扑结构
+            # 发送包含详细参数的拓扑结构
             print("正在计算并发送详细的模型拓扑...")
             topology = []
             x_for_topo = input_tensor
@@ -69,7 +67,7 @@ def run_visualization():
                     "name": name, 
                     "type": layer.__class__.__name__, 
                     "output_shape": output_shape,
-                    "details": details # [新增]
+                    "details": details
                 })
                 x_for_topo = layer(x_for_topo)
 
@@ -78,7 +76,7 @@ def run_visualization():
             print("拓扑已发送。等待Unity构建场景 (10秒)...")
             time.sleep(10)
 
-            # 4. 发送原始图像数据 (保持不变)
+            # 发送原始图像数据
             print("正在发送输入图像数据...")
             image_message = {
                 "type": "input_image_data",
@@ -87,7 +85,7 @@ def run_visualization():
             if not send_data(conn, image_message): return
             time.sleep(1.5)
 
-            # 5. 分步可视化逻辑 (保持不变)
+            #分步可视化逻辑
             x = input_tensor
             for i, layer in enumerate(model.features):
                 layer_name = str(i)

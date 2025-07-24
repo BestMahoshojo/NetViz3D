@@ -23,7 +23,7 @@ public class UIManager : MonoBehaviour
     public TMP_Text cameraSpeedValueText; 
     public TMP_Text lookSensitivityValueText;
 
-    [Header("Layer Info Panel UI")] // [新增]
+    [Header("Layer Info Panel UI")]
     public GameObject layerInfoItemPrefab;
     public Transform layerInfoContentPanel;
 
@@ -86,7 +86,6 @@ public class UIManager : MonoBehaviour
         lookSensitivitySlider.onValueChanged.RemoveAllListeners();
     }
 
-    // [新增]
     public void PopulateLayerInfoPanel(List<DetailedLayerInfo> topology)
     {
         foreach (Transform child in layerInfoContentPanel)
@@ -100,7 +99,6 @@ public class UIManager : MonoBehaviour
         }
     }
     
-    // [新增]
     private void CreateLayerInfoItem(string layerName, string layerType, string layerDetails)
     {
         GameObject itemGO = Instantiate(layerInfoItemPrefab, layerInfoContentPanel);

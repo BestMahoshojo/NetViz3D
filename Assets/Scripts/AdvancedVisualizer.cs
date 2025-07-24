@@ -38,7 +38,7 @@ public class AdvancedVisualizer : MonoBehaviour
     [Range(1.0f, 20.0f)]
     public float layerSpacing = 3f;
 
-    [Header("System References")] // [新增]
+    [Header("System References")]
     public UIManager uiManager;
     #endregion
 
@@ -153,7 +153,7 @@ public class AdvancedVisualizer : MonoBehaviour
         switch (type)
         {
             case "topology_init":
-                // [修改] 使用新的数据结构并通知UI Manager
+                //使用新的数据结构并通知UI Manager
                 var topology = JsonConvert.DeserializeObject<List<DetailedLayerInfo>>(data);
                 StartCoroutine(CreateDetailedArchitecture(topology));
                 if (uiManager != null)
@@ -182,7 +182,7 @@ public class AdvancedVisualizer : MonoBehaviour
     #endregion
 
     #region Coroutine Animations
-    // [修改] CreateDetailedArchitecture现在接收新的数据结构
+    //CreateDetailedArchitecture现在接收新的数据结构
     private IEnumerator CreateDetailedArchitecture(List<DetailedLayerInfo> topology)
     {
         Debug.Log("Creating detailed architecture...");
@@ -378,7 +378,6 @@ public class AdvancedVisualizer : MonoBehaviour
         }
     }
 
-    // [新增]
     public void ToggleLayerVisibility(string layerName, bool isVisible)
     {
         if (layerContainers.ContainsKey(layerName))
