@@ -1,5 +1,3 @@
-// 文件名: AdvancedVisualizer.cs
-
 using UnityEngine;
 using System;
 using System.Net.Sockets;
@@ -8,14 +6,6 @@ using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-
-#region Data Structures (有修改)
-[Serializable] public class LayerTopologyInfo { public string name; public string type; public List<int> output_shape; }
-[Serializable] public class InputImageData { public List<int> pixels; public int width; public int height; }
-[Serializable] public class LayerUpdateData { public string layer_name; public List<List<List<float>>> activations; public float min_val; public float val_range; }
-[Serializable] public class ConvStepData { public string input_layer_name; public string output_layer_name; public List<int> input_start_coords; public int kernel_size; public List<int> output_coord; public float output_value; public float min_val; public float val_range; }
-[Serializable] public class PoolStepData { public string input_layer_name; public string output_layer_name; public List<int> input_start_coords; public int pool_size; public List<int> output_coord; public float output_value; public float min_val; public float val_range; }
-#endregion
 
 public class AdvancedVisualizer : MonoBehaviour
 {
@@ -28,7 +18,7 @@ public class AdvancedVisualizer : MonoBehaviour
     public GameObject convNeuronPrefab;
     public GameObject poolNeuronPrefab;
     public GameObject reluNeuronPrefab;
-    public GameObject defaultNeuronPrefab; 
+    public GameObject defaultNeuronPrefab;
 
     [Header("Animation Prefabs")]
     public GameObject kernelPrefab;
@@ -47,6 +37,9 @@ public class AdvancedVisualizer : MonoBehaviour
     [Tooltip("不同网络层之间的距离")]
     [Range(1.0f, 20.0f)]
     public float layerSpacing = 3f;
+
+    [Header("System References")] // [新增]
+    public UIManager uiManager;
     #endregion
 
     #region Private Fields
@@ -131,12 +124,13 @@ public class AdvancedVisualizer : MonoBehaviour
                 }
             }
             catch (Exception e) { Debug.LogError("Socket exception: " + e); }
-        }) { IsBackground = true };
+        })
+        { IsBackground = true };
         clientReceiveThread.Start();
     }
     #endregion
 
-    #region Message Processing (有修改)
+    #region Message Processing
     private void ProcessMessage(string message)
     {
         var json = JsonConvert.DeserializeObject<Dictionary<string, object>>(message);
@@ -145,8 +139,8 @@ public class AdvancedVisualizer : MonoBehaviour
         if (type == "visualization_complete")
         {
             Debug.Log("--- VISUALIZATION COMPLETE ---");
-            if(kernelInstance) kernelInstance.SetActive(false);
-            if(poolRegionInstance) poolRegionInstance.SetActive(false);
+            if (kernelInstance) kernelInstance.SetActive(false);
+            if (poolRegionInstance) poolRegionInstance.SetActive(false);
             return;
         }
         if (!json.ContainsKey("data"))
@@ -155,12 +149,17 @@ public class AdvancedVisualizer : MonoBehaviour
             return;
         }
         string data = json["data"].ToString();
-        
+
         switch (type)
         {
             case "topology_init":
-                var topology = JsonConvert.DeserializeObject<List<LayerTopologyInfo>>(data);
+                // [修改] 使用新的数据结构并通知UI Manager
+                var topology = JsonConvert.DeserializeObject<List<DetailedLayerInfo>>(data);
                 StartCoroutine(CreateDetailedArchitecture(topology));
+                if (uiManager != null)
+                {
+                    uiManager.PopulateLayerInfoPanel(topology);
+                }
                 break;
             case "input_image_data":
                 var imageData = JsonConvert.DeserializeObject<InputImageData>(data);
@@ -170,12 +169,10 @@ public class AdvancedVisualizer : MonoBehaviour
                 var layerData = JsonConvert.DeserializeObject<LayerUpdateData>(data);
                 StartCoroutine(AnimateLayerUpdate(layerData));
                 break;
-            // [恢复]
             case "conv_step":
                 var convData = JsonConvert.DeserializeObject<ConvStepData>(data);
                 StartCoroutine(AnimateConvStep(convData));
                 break;
-            // [恢复]
             case "pool_step":
                 var poolData = JsonConvert.DeserializeObject<PoolStepData>(data);
                 StartCoroutine(AnimatePoolStep(poolData));
@@ -185,11 +182,12 @@ public class AdvancedVisualizer : MonoBehaviour
     #endregion
 
     #region Coroutine Animations
-    private IEnumerator CreateDetailedArchitecture(List<LayerTopologyInfo> topology)
+    // [修改] CreateDetailedArchitecture现在接收新的数据结构
+    private IEnumerator CreateDetailedArchitecture(List<DetailedLayerInfo> topology)
     {
         Debug.Log("Creating detailed architecture...");
         orderedLayerNames.Clear();
-        var inputLayerInfo = new LayerTopologyInfo { name = "input", type = "Input", output_shape = new List<int> { 1, 3, 32, 32 } };
+        var inputLayerInfo = new DetailedLayerInfo { name = "input", type = "Input", output_shape = new List<int> { 1, 3, 32, 32 }, details = "32x32 RGB Image" };
         topology.Insert(0, inputLayerInfo);
 
         foreach (var layerInfo in topology)
@@ -224,7 +222,7 @@ public class AdvancedVisualizer : MonoBehaviour
                     }
                 }
             }
-             yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
         }
         UpdateNetworkLayout();
         Debug.Log("Architecture creation complete.");
@@ -238,7 +236,7 @@ public class AdvancedVisualizer : MonoBehaviour
         Color[] pixels = new Color[data.width * data.height];
         for (int i = 0; i < pixels.Length; i++)
         {
-            pixels[i] = new Color32((byte)data.pixels[i*3], (byte)data.pixels[i*3+1], (byte)data.pixels[i*3+2], 255);
+            pixels[i] = new Color32((byte)data.pixels[i * 3], (byte)data.pixels[i * 3 + 1], (byte)data.pixels[i * 3 + 2], 255);
         }
         Vector3Int dims = layerDimensions[inputLayerName];
         for (int c = 0; c < dims.x; c++)
@@ -264,11 +262,11 @@ public class AdvancedVisualizer : MonoBehaviour
     {
         if (kernelInstance == null)
         {
-             kernelInstance = Instantiate(kernelPrefab);
-             kernelInstance.name = "ConvolutionKernel";
+            kernelInstance = Instantiate(kernelPrefab);
+            kernelInstance.name = "ConvolutionKernel";
         }
         kernelInstance.SetActive(true);
-        if(poolRegionInstance) poolRegionInstance.SetActive(false);
+        if (poolRegionInstance) poolRegionInstance.SetActive(false);
 
         GameObject inputContainer = layerContainers[data.input_layer_name];
         Vector3Int inputDims = layerDimensions[data.input_layer_name];
@@ -283,7 +281,7 @@ public class AdvancedVisualizer : MonoBehaviour
 
         var neuronToUpdate = neuronObjects[data.output_layer_name][data.output_coord[0], data.output_coord[1], data.output_coord[2]];
         UpdateNeuronGrayscale(neuronToUpdate, data.output_value, data.min_val, data.val_range);
-        
+
         yield return new WaitForEndOfFrame();
     }
 
@@ -295,7 +293,7 @@ public class AdvancedVisualizer : MonoBehaviour
             poolRegionInstance.name = "PoolingRegion";
         }
         poolRegionInstance.SetActive(true);
-        if(kernelInstance) kernelInstance.SetActive(false);
+        if (kernelInstance) kernelInstance.SetActive(false);
 
         GameObject inputContainer = layerContainers[data.input_layer_name];
         Vector3Int inputDims = layerDimensions[data.input_layer_name];
@@ -313,23 +311,22 @@ public class AdvancedVisualizer : MonoBehaviour
 
         yield return new WaitForEndOfFrame();
     }
-    
-    // [修改] 用于ReLU的整层更新，也接收min/range
+
     private IEnumerator AnimateLayerUpdate(LayerUpdateData data)
     {
         Debug.Log($"Updating layer {data.layer_name} entirely (for ReLU)...");
-        if(kernelInstance) kernelInstance.SetActive(false);
-        if(poolRegionInstance) poolRegionInstance.SetActive(false);
+        if (kernelInstance) kernelInstance.SetActive(false);
+        if (poolRegionInstance) poolRegionInstance.SetActive(false);
 
         var activations = data.activations;
         string layerName = data.layer_name;
         if (!neuronObjects.ContainsKey(layerName)) yield break;
 
-        for(int c=0; c < activations.Count; c++)
+        for (int c = 0; c < activations.Count; c++)
         {
-            for(int y=0; y < activations[c].Count; y++)
+            for (int y = 0; y < activations[c].Count; y++)
             {
-                for (int x=0; x < activations[c][y].Count; x++)
+                for (int x = 0; x < activations[c][y].Count; x++)
                 {
                     UpdateNeuronGrayscale(neuronObjects[layerName][c, y, x], activations[c][y][x], data.min_val, data.val_range);
                 }
@@ -348,7 +345,7 @@ public class AdvancedVisualizer : MonoBehaviour
         renderer.material.SetColor("_Color", grayscale);
         renderer.material.SetColor("_EmissionColor", grayscale * 0.8f);
     }
-    
+
     public void UpdateNetworkLayout()
     {
         if (layerContainers.Count == 0) return;
@@ -378,6 +375,15 @@ public class AdvancedVisualizer : MonoBehaviour
             }
             float layerDepth = channels * channelSpacing;
             zOffset += layerSpacing + layerDepth;
+        }
+    }
+
+    // [新增]
+    public void ToggleLayerVisibility(string layerName, bool isVisible)
+    {
+        if (layerContainers.ContainsKey(layerName))
+        {
+            layerContainers[layerName].SetActive(isVisible);
         }
     }
     #endregion
