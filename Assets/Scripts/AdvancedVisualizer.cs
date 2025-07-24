@@ -1,3 +1,5 @@
+// 文件名: AdvancedVisualizer.cs
+
 using UnityEngine;
 using System;
 using System.Net.Sockets;
@@ -10,6 +12,7 @@ using Newtonsoft.Json;
 public class AdvancedVisualizer : MonoBehaviour
 {
     #region Inspector Fields
+    // 这部分保持不变
     [Header("Network Connection")]
     public string serverHost = "127.0.0.1";
     public int serverPort = 65432;
@@ -42,7 +45,14 @@ public class AdvancedVisualizer : MonoBehaviour
     public UIManager uiManager;
     #endregion
 
+    #region Public State
+    // 这部分保持不变
+    [HideInInspector]
+    public bool isPaused = false;
+    #endregion
+
     #region Private Fields
+    // 这部分保持不变
     private TcpClient client;
     private NetworkStream stream;
     private Thread clientReceiveThread;
@@ -64,7 +74,9 @@ public class AdvancedVisualizer : MonoBehaviour
     #region Unity Lifecycle Methods
     void Start()
     {
-        ConnectToServer();
+        // [修改] 确认 ConnectToServer() 的调用已被注释或删除
+        // ConnectToServer(); 
+        
         lastNeuronSpacing = neuronSpacing;
         lastChannelSpacing = channelSpacing;
         lastLayerSpacing = layerSpacing;
@@ -72,7 +84,7 @@ public class AdvancedVisualizer : MonoBehaviour
 
     void Update()
     {
-        while (messageQueue.Count > 0)
+        while (!isPaused && messageQueue.Count > 0)
         {
             string message = "";
             lock (messageQueue) { if (messageQueue.Count > 0) message = messageQueue.Dequeue(); }
@@ -100,8 +112,15 @@ public class AdvancedVisualizer : MonoBehaviour
     #endregion
 
     #region Network Handling
-    private void ConnectToServer()
+    // [核心修改] 将 private void ConnectToServer() 修改为 public void StartConnecting()
+    public void StartConnecting()
     {
+        if (clientReceiveThread != null && clientReceiveThread.IsAlive)
+        {
+            Debug.LogWarning("连接已在进行中或已建立，请勿重复调用。");
+            return;
+        }
+
         clientReceiveThread = new Thread(() =>
         {
             try
@@ -131,6 +150,7 @@ public class AdvancedVisualizer : MonoBehaviour
     #endregion
 
     #region Message Processing
+    // 这部分保持不变
     private void ProcessMessage(string message)
     {
         var json = JsonConvert.DeserializeObject<Dictionary<string, object>>(message);
@@ -153,7 +173,6 @@ public class AdvancedVisualizer : MonoBehaviour
         switch (type)
         {
             case "topology_init":
-                //使用新的数据结构并通知UI Manager
                 var topology = JsonConvert.DeserializeObject<List<DetailedLayerInfo>>(data);
                 StartCoroutine(CreateDetailedArchitecture(topology));
                 if (uiManager != null)
@@ -182,15 +201,17 @@ public class AdvancedVisualizer : MonoBehaviour
     #endregion
 
     #region Coroutine Animations
-    //CreateDetailedArchitecture现在接收新的数据结构
+    // 这部分保持不变
     private IEnumerator CreateDetailedArchitecture(List<DetailedLayerInfo> topology)
     {
         Debug.Log("Creating detailed architecture...");
         orderedLayerNames.Clear();
+        // [注意] Python脚本现在不发送input层了，所以我们在这里手动创建
         var inputLayerInfo = new DetailedLayerInfo { name = "input", type = "Input", output_shape = new List<int> { 1, 3, 32, 32 }, details = "32x32 RGB Image" };
-        topology.Insert(0, inputLayerInfo);
+        List<DetailedLayerInfo> fullTopology = new List<DetailedLayerInfo>(topology);
+        fullTopology.Insert(0, inputLayerInfo);
 
-        foreach (var layerInfo in topology)
+        foreach (var layerInfo in fullTopology)
         {
             orderedLayerNames.Add(layerInfo.name);
             GameObject prefabToUse = defaultNeuronPrefab;
@@ -227,7 +248,8 @@ public class AdvancedVisualizer : MonoBehaviour
         UpdateNetworkLayout();
         Debug.Log("Architecture creation complete.");
     }
-
+    
+    // ... 后续所有协程和辅助函数都保持不变 ...
     private IEnumerator AnimateInputLayer(InputImageData data)
     {
         Debug.Log("Mapping input image to the input layer...");
@@ -267,7 +289,6 @@ public class AdvancedVisualizer : MonoBehaviour
         }
         kernelInstance.SetActive(true);
         if (poolRegionInstance) poolRegionInstance.SetActive(false);
-
         GameObject inputContainer = layerContainers[data.input_layer_name];
         Vector3Int inputDims = layerDimensions[data.input_layer_name];
         float kernelScale = data.kernel_size * neuronSpacing;
@@ -278,10 +299,8 @@ public class AdvancedVisualizer : MonoBehaviour
             (data.input_start_coords[0] + data.kernel_size / 2f - inputDims.y / 2f) * neuronSpacing,
             0);
         kernelInstance.transform.localPosition = kernelPos;
-
         var neuronToUpdate = neuronObjects[data.output_layer_name][data.output_coord[0], data.output_coord[1], data.output_coord[2]];
         UpdateNeuronGrayscale(neuronToUpdate, data.output_value, data.min_val, data.val_range);
-
         yield return new WaitForEndOfFrame();
     }
 
@@ -294,7 +313,6 @@ public class AdvancedVisualizer : MonoBehaviour
         }
         poolRegionInstance.SetActive(true);
         if (kernelInstance) kernelInstance.SetActive(false);
-
         GameObject inputContainer = layerContainers[data.input_layer_name];
         Vector3Int inputDims = layerDimensions[data.input_layer_name];
         float regionScale = data.pool_size * neuronSpacing;
@@ -305,10 +323,8 @@ public class AdvancedVisualizer : MonoBehaviour
             (data.input_start_coords[0] + data.pool_size / 2f - inputDims.y / 2f) * neuronSpacing,
             (data.output_coord[0] - inputDims.x / 2f) * channelSpacing);
         poolRegionInstance.transform.localPosition = regionPos;
-
         var neuronToUpdate = neuronObjects[data.output_layer_name][data.output_coord[0], data.output_coord[1], data.output_coord[2]];
         UpdateNeuronGrayscale(neuronToUpdate, data.output_value, data.min_val, data.val_range);
-
         yield return new WaitForEndOfFrame();
     }
 
@@ -317,11 +333,9 @@ public class AdvancedVisualizer : MonoBehaviour
         Debug.Log($"Updating layer {data.layer_name} entirely (for ReLU)...");
         if (kernelInstance) kernelInstance.SetActive(false);
         if (poolRegionInstance) poolRegionInstance.SetActive(false);
-
         var activations = data.activations;
         string layerName = data.layer_name;
         if (!neuronObjects.ContainsKey(layerName)) yield break;
-
         for (int c = 0; c < activations.Count; c++)
         {
             for (int y = 0; y < activations[c].Count; y++)
@@ -384,6 +398,12 @@ public class AdvancedVisualizer : MonoBehaviour
         {
             layerContainers[layerName].SetActive(isVisible);
         }
+    }
+    
+    public void TogglePause()
+    {
+        isPaused = !isPaused;
+        Debug.Log(isPaused ? "Visualization Paused." : "Visualization Resumed.");
     }
     #endregion
 }

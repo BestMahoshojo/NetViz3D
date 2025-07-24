@@ -8,6 +8,7 @@ public class UIManager : MonoBehaviour
     [Header("Script References")]
     public AdvancedVisualizer visualizer;
     public FreeFlyCamera flyCamera;
+    public PythonLauncher pythonLauncher;
 
     [Header("Visualization UI")]
     public Slider neuronSpacingSlider;
@@ -27,6 +28,12 @@ public class UIManager : MonoBehaviour
     public GameObject layerInfoItemPrefab;
     public Transform layerInfoContentPanel;
 
+    [Header("Control Buttons")]
+    public Button startButton;
+    public Button pauseButton;
+    public Button exitButton;
+    private TMP_Text pauseButtonText;
+
     void Start()
     {
         if (visualizer != null)
@@ -37,7 +44,7 @@ public class UIManager : MonoBehaviour
         }
         if (flyCamera != null)
         {
-            cameraSpeedSlider.value = flyCamera.baseSpeed; 
+            cameraSpeedSlider.value = flyCamera.baseSpeed;
             lookSensitivitySlider.value = flyCamera.lookSensitivity;
         }
         UpdateAllValueTexts();
@@ -46,6 +53,55 @@ public class UIManager : MonoBehaviour
         layerSpacingSlider.onValueChanged.AddListener(OnLayerSpacingChanged);
         cameraSpeedSlider.onValueChanged.AddListener(OnCameraSpeedChanged);
         lookSensitivitySlider.onValueChanged.AddListener(OnLookSensitivityChanged);
+        
+        if (startButton != null) startButton.onClick.AddListener(OnStartButtonPressed);
+        if (pauseButton != null)
+        {
+            pauseButton.onClick.AddListener(OnPauseButtonPressed);
+            pauseButtonText = pauseButton.GetComponentInChildren<TMP_Text>();
+            pauseButton.interactable = false; // 初始时禁用暂停按钮
+        }
+        if (exitButton != null) exitButton.onClick.AddListener(OnExitButtonPressed);
+    }
+    private void OnStartButtonPressed()
+    {
+        if (pythonLauncher != null)
+        {
+            pythonLauncher.StartVisualizationProcess();
+            startButton.interactable = false; // 按下后禁用开始按钮，防止重复启动
+            pauseButton.interactable = true; // 启用暂停按钮
+        }
+    }
+
+    private void OnPauseButtonPressed()
+    {
+        if (visualizer != null)
+        {
+            visualizer.TogglePause();
+            if (pauseButtonText != null)
+            {
+                pauseButtonText.text = visualizer.isPaused ? "Resume" : "Pause";
+            }
+        }
+    }
+
+    private void OnExitButtonPressed()
+    {
+        Debug.Log("退出应用程序...");
+
+        // 在编辑器模式下，Application.Quit()有时不会立即触发OnApplicationQuit。
+        // 手动调用清理函数可以确保Python进程被关闭。
+        #if UNITY_EDITOR
+        if (pythonLauncher != null)
+        {
+            // 通过反射或设为public来调用KillPythonProcess
+            // 为了简单，我们直接让它调用OnApplicationQuit
+            pythonLauncher.SendMessage("OnApplicationQuit", SendMessageOptions.DontRequireReceiver);
+        }
+        UnityEditor.EditorApplication.isPlaying = false;
+        #else
+        Application.Quit();
+        #endif
     }
 
     public void OnNeuronSpacingChanged(float value)
