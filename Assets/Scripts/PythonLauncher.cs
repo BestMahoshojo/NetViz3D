@@ -1,5 +1,3 @@
-// 文件名: PythonLauncher.cs
-
 using UnityEngine;
 using System.Diagnostics;
 using System.IO;
